@@ -106,3 +106,11 @@ class BackgroundRemovalService:
         final_bytes = self.image_service.image_to_bytes(img, format="PNG", optimize=True)
         
         return final_bytes, image_type
+
+    def remove_background(self, image_bytes: bytes, model_name: str) -> bytes:
+        logger.info(f"Removing background using model: {model_name}")
+        session = self.get_session(model_name)
+        # Remove background
+        output_bytes = remove(image_bytes, session=session)
+        logger.info(f"Background removed using model: {model_name}")
+        return output_bytes

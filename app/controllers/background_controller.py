@@ -97,7 +97,7 @@ async def remove_background_icon(file: UploadFile = File(...)):
 
 
 @router.post(
-    "/remove-bg",
+    "/remove-bg-auto-detect",
     summary="Remove background (standard)",
     description="Remove background with soft edges for general use",
     response_class=Response,
@@ -127,7 +127,6 @@ async def remove_background_standard(file: UploadFile = File(...)):
         # Process image
         bg_service = get_bg_service()
         result_bytes, image_type = bg_service.remove_background_standard(input_bytes)
-        result_bytes, image_type = bg_service.remove_background_standard(input_bytes)
         
         # Return response
         return Response(
@@ -137,6 +136,50 @@ async def remove_background_standard(file: UploadFile = File(...)):
                 "Content-Disposition": 'attachment; filename="result.png"',
                 "Content-Length": str(len(result_bytes)),
                 "X-Image-Type": image_type.value
+            }
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+
+
+@router.post(
+    "/remove-bg/{model_name}",
+    summary="Remove background (standard)",
+    description="Remove background with soft edges for general use",
+    response_class=Response,
+    tags=["Background Removal"]
+)
+async def remove_background_standard(model_name: str, file: UploadFile = File(...)):
+    """
+    Remove background from an image based on specified model.
+    """
+    try:
+        # Read file
+        input_bytes = await file.read()
+        
+        # Validate file
+        if not input_bytes:
+            raise HTTPException(status_code=400, detail="Empty file")
+        
+        if len(input_bytes) > settings.MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400, 
+            )
+        
+        # Process image
+        bg_service = get_bg_service()
+        result_bytes = bg_service.remove_background(input_bytes, model_name)
+        
+        # Return response
+        return Response(
+            content=result_bytes,
+            media_type="image/png",
+            headers={
+                "Content-Disposition": 'attachment; filename="result.png"',
+                "Content-Length": str(len(result_bytes))
             }
         )
     
