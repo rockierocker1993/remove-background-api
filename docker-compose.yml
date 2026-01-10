@@ -7,3 +7,9 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
+    volumes:
+      - model-cache:/root/.u2net  # Cache models to avoid re-downloading
+      - ./storage:/app/storage      # Mount storage directory
+
+volumes:
+  model-cache:

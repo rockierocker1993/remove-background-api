@@ -6,3 +6,5 @@ python-multipart
 onnxruntime
 numpy
 opencv-python
+pydantic-settings
+python-dotenv
