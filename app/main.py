@@ -11,18 +11,17 @@ from io import BytesIO
 app = FastAPI(title="Background Removal Service")
 
 # Pakai model yang edge-nya lebih bagus
-anime_session = new_session("isnet-anime")
-general_session = new_session("isnet-general-use")
+# anime_session = new_session("isnet-anime")
+# general_session = new_session("isnet-general-use")
 
-@app.post("/remove-bg-icon")
-async def remove_bg(file: UploadFile = File(...)):
+@app.post("/remove-bg/{model_name}")
+async def remove_bg(model_name: str, file: UploadFile = File(...)):
     try:
         input_bytes = await file.read()
         if not input_bytes:
             raise HTTPException(status_code=400, detail="Empty file")
 
-        image_type = detect_image_type(input_bytes)
-        session = general_session #if image_type == "anime" else general_session
+        session = new_session(model_name)
 
         # 1️⃣ Remove background
         output_bytes = remove(input_bytes, session=session)
@@ -55,32 +54,7 @@ async def remove_bg(file: UploadFile = File(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-def detect_image_type(image_bytes: bytes) -> str:
-    # Load image
-    image = Image.open(BytesIO(image_bytes)).convert("RGB")
-    img = np.array(image)
-
-    # Convert to HSV
-    hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-    saturation = hsv[:, :, 1]
-
-    # Compute metrics
-    sat_mean = np.mean(saturation)
-    sat_std = np.std(saturation)
-
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    edges = cv2.Canny(gray, 100, 200)
-    edge_density = np.mean(edges > 0)
-
-    # Heuristic rules
-    if sat_mean > 80 and sat_std < 60 and edge_density < 0.15:
-        return "anime"
-
-    return "photo"
-
-
+    
 @app.get("/health")
 def health():
     return {"status": "ok"}
